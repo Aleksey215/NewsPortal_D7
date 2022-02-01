@@ -36,3 +36,9 @@ def send_sub_mail(sender, instance, created, **kwargs):
         msg.attach_alternative(html_content, 'text/html')
         msg.send()
     return redirect('/posts/')
+
+
+@receiver(post_save, sender=Post)
+def posting_signal(created):
+    new_post = created
+    return new_post

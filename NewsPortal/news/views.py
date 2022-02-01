@@ -36,7 +36,7 @@ from .filters import PostFilter
 # формы - прописываются в файле forms.py
 # используются для создания форм в браузере по модели
 from .forms import PostForm
-from .tasks import hello, printer  # Trial
+from .tasks import printer, hello, email_task
 
 
 # Класс-представление для отображения списка постов
@@ -81,59 +81,66 @@ class PostDetailView(DetailView):
 # представление для создания объекта.
 # наследуемся от миксинов авторизации и разрешения доступа, а так же от стандартного представления
 class PostCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    # указываем имя шаблона
-    template_name = 'news/post_add.html'
-    # указываем класс формы, созданный в файле forms.py
-    form_class = PostForm
+    template_name = 'news/post_add.html'  # указываем имя шаблона
+    form_class = PostForm  # указываем класс формы, созданный в файле forms.py
     permission_required = ('news.add_post',)  # создание разрешения на создание
 
-    # Реализация отправки письма подписчикам при создании нового поста в их категории
-    # def post(self, request, *args, **kwargs):
-    #     form = PostForm(request.POST)  # поле формы
-    #     post_category_pk = request.POST['post_category']  # получение первичного ключа категории
-    #     sub_text = request.POST.get('text')  # выдергиваем поле с текстом из БД
-    #     sub_title = request.POST.get('title')  # вы дергиваем заголовок из БД
-    #     # через запрос и выдернутый первичный ключ, получаем категорию из БД
-    #     post_category = Category.objects.get(pk=post_category_pk)
-    #     # создаем переменную(список) в котором хранятся все подписчики полученной категории
-    #     subscribers = post_category.subscribers.all()
-    #     # получаем адрес хоста и порта (в нашем случае 127.0.0.1:8000), чтоб в дальнейшем указать его в ссылке
-    #     # в письме, чтоб пользователь мог с письма переходить на наш сайт, на конкретную новость
-    #     host = request.META.get('HTTP_HOST')
-    #
-    #     # валидатор - чтоб данные в форме были корректно введены, без вредоносного кода от хакеров и прочего
-    #     if form.is_valid():
-    #         news = form.save(commit=False)
-    #         news.save()
-    #
-    #     # в цикле проходимся по всем подписчикам из списка
-    #     for subscriber in subscribers:
-    #         # (6)
-    #         # html_content = render_to_string(
-    #         #     'news/mail_sender.html', {'user': subscriber, 'text': sub_text[:50], 'post': news, 'title': sub_title, 'host': host})
-    #         # указываем шаблон и переменные для отправки в письме
-    #         html_content = render_to_string(
-    #             'news/mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': news, 'title': sub_title, 'host': host}
-    #         )
-    #
-    #         # (7)
-    #         msg = EmailMultiAlternatives(
-    #             # Заголовок письма, тема письма
-    #             subject=f'Здравствуй, {subscriber.username}. Новая статья в вашем разделе!',
-    #             # Наполнение письма
-    #             body=f'{sub_text[:50]}',
-    #             # От кого письмо (должно совпадать с реальным адресом почты)
-    #             from_email='kalosha21541@yandex.ru',
-    #             # Кому отправлять, конкретные адреса рассылки, берем из переменной, либо можно явно прописать
-    #             to=[subscriber.email],
-    #         )
-    #
-    #         # прописываем html-шаблон как наполнение письма
-    #         msg.attach_alternative(html_content, "text/html")
-    #         # отправляем письмо
-    #         msg.send()
-    #     # возвращаемся на страницу с постами
-    #     return redirect('/posts/')
+    # Дописать функцию!!!!
+    def send_mail_after_posting(self, request, *args, **kwargs):
+        print('Представления - начало')
+        print()
+        print()
+        print('====================ПРОВЕРКА СИГНАЛОВ===========================')
+        print()
+        print('задача - отправка письма подписчикам при добавлении новой статьи')
+
+        form = PostForm(request.POST)  # поле формы
+        post_category_pk = request.POST['post_category']  # получение первичного ключа категории
+        sub_text = request.POST.get('text')  # выдергиваем поле с текстом из БД
+        sub_title = request.POST.get('title')  # выдергиваем заголовок из БД
+        post_category = Category.objects.get(pk=post_category_pk)  # через запрос и выдернутый первичный ключ, получаем категорию из БД
+        print()
+        print('category:', post_category)
+        print()
+        subscribers = post_category.subscribers.all()  # создаем переменную(список) в котором хранятся все подписчики полученной категории
+        # получаем адрес хоста и порта (в нашем случае 127.0.0.1:8000), чтоб в дальнейшем указать его в ссылке
+        # в письме, чтоб пользователь мог с письма переходить на наш сайт, на конкретную новость
+        host = request.META.get('HTTP_HOST')
+
+        if form.is_valid():
+            news = form.save(commit=False)
+            news.save()
+
+            # для удобства вывода инфы в консоль, никакой важной функции не несет
+            print('Адреса рассылки:')
+            for qaz in subscribers:
+                print(qaz.email)
+
+            print()
+            print()
+            print()
+
+        # в цикле проходимся по всем подписчикам из списка
+        for subscriber in subscribers:
+            # для удобства вывода инфы в консоль, никакой важной функции не несет
+            print('**********************', subscriber.email, '**********************')
+            print(subscriber)
+            print('Адресат:', subscriber.email)
+            html_content = render_to_string('news/mail.html',
+                                            {'user': subscriber,
+                                             'text': sub_text[:50],
+                                             'post': news,
+                                             'title': sub_title,
+                                             'host': host})
+            subscriber_username = subscriber.username
+            subscriber_email = subscriber.email
+            # фукнция для таски, передаем в нее все что нужно для отправки подписчикам письма
+            email_task.delay(subscriber_username, subscriber_email, html_content)
+            print()
+            print(html_content)
+            print()
+            # возвращаемся на страницу с постами
+            return redirect('/posts/')
 
 
 # класс-представление для редактирования объекта
@@ -171,12 +178,9 @@ class PostDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 # класс-представление для списка категорий
 # унаследован от стандартного представления
 class CategoryList(ListView):
-    # указываем модель из которой берем объекты
-    model = Category
-    # указываем имя шаблона, в котором написан html для отображения объектов модели
-    template_name = 'news/category_list.html'
-    # имя переменной, под которым будет передаваться объект в шаблон
-    context_object_name = 'categories'
+    model = Category  # указываем модель из которой берем объекты
+    template_name = 'news/category_list.html'  # указываем имя шаблона, в котором написан html для отображения объектов модели
+    context_object_name = 'categories'  # имя переменной, под которым будет передаваться объект в шаблон
 
 
 # класс-представление для отображения списка категорий
@@ -228,24 +232,67 @@ def del_subscribe(request, **kwargs):
     return redirect('/posts/categories')
 
 
+# Ниже пример из учебного материала
 class IndexView(View):
     def get(self, request):
         # printer.delay(10)
         # printer.apply_async([10], countdown=5)  # Параметр countdown устанавливает время (в секундах),
-                                                # через которое задача должна начать выполняться.
+                                                  # через которое задача должна начать выполняться.
         # для реализации того же самого сдвига на 5 секунд мы можем получить текущее время и добавить timedelta,
         # равное 5 секундам, чтобы получить datetime-объект момента через 5 секунд от текущего.
-        printer.apply_async([10],
-                            eta=datetime.now() + timedelta(seconds=5))
+        printer.apply_async([10], eta=datetime.now() + timedelta(seconds=5))
         hello.delay()
         return HttpResponse('Hello!')
 
 
-
-
-
-
-
+    # Реализация отправки письма подписчикам при создании нового поста в их категории
+    # (было реализовано для представления: "PostCreateView")
+    # def post(self, request, *args, **kwargs):
+    #     form = PostForm(request.POST)  # поле формы
+    #     post_category_pk = request.POST['post_category']  # получение первичного ключа категории
+    #     sub_text = request.POST.get('text')  # выдергиваем поле с текстом из БД
+    #     sub_title = request.POST.get('title')  # вы дергиваем заголовок из БД
+    #     # через запрос и выдернутый первичный ключ, получаем категорию из БД
+    #     post_category = Category.objects.get(pk=post_category_pk)
+    #     # создаем переменную(список) в котором хранятся все подписчики полученной категории
+    #     subscribers = post_category.subscribers.all()
+    #     # получаем адрес хоста и порта (в нашем случае 127.0.0.1:8000), чтоб в дальнейшем указать его в ссылке
+    #     # в письме, чтоб пользователь мог с письма переходить на наш сайт, на конкретную новость
+    #     host = request.META.get('HTTP_HOST')
+    #
+    #     # валидатор - чтоб данные в форме были корректно введены, без вредоносного кода от хакеров и прочего
+    #     if form.is_valid():
+    #         news = form.save(commit=False)
+    #         news.save()
+    #
+    #     # в цикле проходимся по всем подписчикам из списка
+    #     for subscriber in subscribers:
+    #         # (6)
+    #         # html_content = render_to_string(
+    #         #     'news/mail_sender.html', {'user': subscriber, 'text': sub_text[:50], 'post': news, 'title': sub_title, 'host': host})
+    #         # указываем шаблон и переменные для отправки в письме
+    #         html_content = render_to_string(
+    #             'news/mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': news, 'title': sub_title, 'host': host}
+    #         )
+    #
+    #         # (7)
+    #         msg = EmailMultiAlternatives(
+    #             # Заголовок письма, тема письма
+    #             subject=f'Здравствуй, {subscriber.username}. Новая статья в вашем разделе!',
+    #             # Наполнение письма
+    #             body=f'{sub_text[:50]}',
+    #             # От кого письмо (должно совпадать с реальным адресом почты)
+    #             from_email='kalosha21541@yandex.ru',
+    #             # Кому отправлять, конкретные адреса рассылки, берем из переменной, либо можно явно прописать
+    #             to=[subscriber.email],
+    #         )
+    #
+    #         # прописываем html-шаблон как наполнение письма
+    #         msg.attach_alternative(html_content, "text/html")
+    #         # отправляем письмо
+    #         msg.send()
+    #     # возвращаемся на страницу с постами
+    #     return redirect('/posts/')
 
 
 
