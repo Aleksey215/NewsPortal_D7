@@ -8,18 +8,18 @@ from celery import shared_task
 from celery.schedules import crontab
 import time
 
-
-@shared_task
-def hello():
-    time.sleep(10)
-    print('Hello, world!')
-
-
-@shared_task
-def printer(N):
-    for i in range(N):
-        time.sleep(1)
-        print(i+1)
+#
+# @shared_task
+# def hello():
+#     time.sleep(10)
+#     print('Hello, world!')
+#
+#
+# @shared_task
+# def printer(N):
+#     for i in range(N):
+#         time.sleep(1)
+#         print(i+1)
 
 
 # Задача на отправку письма после добавления новой публикации
@@ -34,7 +34,7 @@ def email_task(subscriber_username, subscriber_email, html_content):
                 )
     msg.attach_alternative(html_content, 'text/html')
     # код ниже временно отключен
-    # msg.send()
+    msg.send()
     print()
     print(html_content)
     print()
@@ -53,7 +53,7 @@ def weekly_email_task(subscriber_username, subscriber_email, html_content):
     )
 
     msg.attach_alternative(html_content, 'text/html')
-    # msg.send()
+    msg.send()
     print()
     print(html_content)
     print()

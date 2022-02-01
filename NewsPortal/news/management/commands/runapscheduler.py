@@ -17,6 +17,7 @@ from django_apscheduler.models import DjangoJobExecution
 from datetime import datetime
 
 from news.models import Category, Post
+from news.tasks import weekly_email_task
 
 
 logger = logging.getLogger(__name__)
@@ -94,26 +95,16 @@ def news_sender():
                                           'category_name': category.name,
                                           'week_number_last': week_number_last})
 
-            msg = EmailMultiAlternatives(
-                subject=f'Здравствуй, {subscriber.username}, новые статьи за прошлую неделю в вашем разделе!',
-                from_email='kalosha21541@yandex.ru',
-                to=[subscriber.email]
-            )
+            subscriber_username = subscriber.username
+            subscriber_email = subscriber.email
 
-            msg.attach_alternative(html_content, 'text/html')
+            weekly_email_task.delay(subscriber_username, subscriber_email, html_content)
+
             print()
 
-            # для удобства в консоль выводим содержимое нашего письма, в тестовом режиме проверим, что и
-            # кому отправляем
             print(html_content)
 
-            # Чтобы запустить реальную рассылку, нужно разкоментить нижнюю строчку
-            # msg.send()
 
-
-#
-#
-#
 # функция, которая будет удалять неактуальные задачи
 def delete_old_job_executions(max_age=604_800):
     DjangoJobExecution.objects.delete_old_job_executions(max_age)

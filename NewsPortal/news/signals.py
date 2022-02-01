@@ -9,36 +9,39 @@ from django.template.loader import render_to_string
 # Импорт пользовательских элементов:
 # модели - передают ин-ию из БД
 from .models import Post, Category
+from .views import sending_emails_to_subscribers
 
+
+@receiver(post_save, sender=Post)
+def send_emails_on_signal(sender, created, instance, **kwargs):
+    print('Сигнал - старт')
+    sending_emails_to_subscribers(instance)
+    print('Сигнал - стоп')
 
 # Функция обработчик для сигнала "post_save"
 # создаём функцию обработчик с параметрами под регистрацию сигнала
 # запускает выполнение кода при каком-либо действии пользователя, в нашем случае -
 # сохранение в БД модели Post записи
-@receiver(post_save, sender=Post)
-def send_sub_mail(sender, instance, created, **kwargs):
-    global subscriber
-    sub_title = instance.title
-    sub_text = instance.text
-    category = Category.objects.get(pk=Post.objects.get(pk=instance.pk).post_category.pk)
-    subscribers = category.subscribers.all()
-    post = instance
+# @receiver(post_save, sender=Post)
+# def send_sub_mail(sender, instance, created, **kwargs):
+#     global subscriber
+#     sub_title = instance.title
+#     sub_text = instance.text
+#     category = Category.objects.get(pk=Post.objects.get(pk=instance.pk).post_category.pk)
+#     subscribers = category.subscribers.all()
+#     post = instance
+#
+#     for subscriber in subscribers:
+#         html_content = render_to_string(
+#             'news/mail.html', {'user': subscriber, 'title': sub_title, 'text': sub_text[:50], 'post': post})
+#
+#         msg = EmailMultiAlternatives(
+#             subject=f'Здравствуй, {subscriber.username}. Новая статья в вашем разделе!',
+#             from_email='kalosha21541@yandex.ru',
+#             to=[subscriber.email]
+#         )
+#         msg.attach_alternative(html_content, 'text/html')
+#         msg.send()
+#     return redirect('/posts/')
 
-    for subscriber in subscribers:
-        html_content = render_to_string(
-            'news/mail.html', {'user': subscriber, 'title': sub_title, 'text': sub_text[:50], 'post': post})
 
-        msg = EmailMultiAlternatives(
-            subject=f'Здравствуй, {subscriber.username}. Новая статья в вашем разделе!',
-            from_email='kalosha21541@yandex.ru',
-            to=[subscriber.email]
-        )
-        msg.attach_alternative(html_content, 'text/html')
-        msg.send()
-    return redirect('/posts/')
-
-
-@receiver(post_save, sender=Post)
-def posting_signal(created):
-    new_post = created
-    return new_post
