@@ -12,11 +12,13 @@ from .models import Post, Category
 from .views import sending_emails_to_subscribers
 
 
+# создание сигнала
+# оборачиваем в декоратор и выбираем тип сигнала и модель
 @receiver(post_save, sender=Post)
+# описываем функцию сигнала и передаем экземпляр модели
 def send_emails_on_signal(sender, created, instance, **kwargs):
-    print('Сигнал - старт')
+    # запускаем функцию представление
     sending_emails_to_subscribers(instance)
-    print('Сигнал - стоп')
 
 # Функция обработчик для сигнала "post_save"
 # создаём функцию обработчик с параметрами под регистрацию сигнала

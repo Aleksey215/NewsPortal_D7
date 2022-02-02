@@ -23,22 +23,13 @@ from news.tasks import weekly_email_task
 logger = logging.getLogger(__name__)
 
 
-# решенная задача - рассылка подписчикам новых новостей за прошлую неделю по определенным категориям новостей
+# рассылка подписчикам новых новостей за прошлую неделю по определенным категориям новостей
 def news_sender():
-    print()
-    print()
-    print()
-    print()
-    print('===================================ПРОВЕРКА СЕНДЕРА===================================')
-    print()
-    print()
-
     # Первый цикл - получение из модели категории по очереди всех объектов, всех наименований категорий
     for category in Category.objects.all():
 
         # пустой список для будущего формирования списка статей, разбитых по категориям + ссылка перехода на каждую
-        # статью, своя уникальная рядом с названием статьи (топорный вариант ссылок, блокируется сайтами,
-        # антиспам срабатывает)
+        # статью, своя уникальная рядом с названием статьи
         news_from_each_category = []
 
         # определение номера прошлой недели
@@ -52,57 +43,34 @@ def news_sender():
                                                                                         'time_of_creation',
                                                                                         'post_category_id__name'):
 
-            # преобразуем дату в человеческий вид - убираем секунды и прочую хрень
+            # преобразуем дату в человеческий вид - убираем секунды и прочее
             date_format = post.get("time_of_creation").strftime("%d/%m/%Y")
 
             # из данных запроса выдираем нужные нам поля (time_of_creation - для проверки выводится),
             # и из значений данных полей формируем заголовок и реальную ссылку на переход на статью на наш сайт
             post = (f' http://127.0.0.1:8000/posts/{post.get("pk")}, Заголовок: {post.get("title")}, '
-                   f'Категория: {post.get("post_category_id__name")}, Дата создания: {date_format}')
+                   f' Категория: {post.get("post_category_id__name")}, Дата создания: {date_format}')
 
             # каждую строчку помещаем в список новостей
             news_from_each_category.append(post)
 
-        # для удобства в консоль добавляем разграничители и пометки
-        print()
-        print('+++++++++++++++++++++++++++++', category.name, '++++++++++++++++++++++++++++++++++++++++++++')
-        print()
-        print("Письма будут отправлены подписчикам категории:", category.name, '( id:', category.id, ')')
-
         # переменная subscribers содержит информацию о подписчиках, в дальнейшем понадобится их мыло
         subscribers = category.subscribers.all()
-
-        # этот цикл лишь для вывода инфы в консоль об адресах подписчиков, ни на что не влияет, для удобства и тестов
-        print('по следующим адресам email: ')
-        for _ in subscribers:
-            print(_.email)
-
-        print()
-        print()
 
         # Третий цикл - доформирование письма (имя кому отправляем получаем тут) и рассылка готового
         # письма подписчикам, которые подписаны под данной категорией
         # создаем приветственное письмо с нашим списком новых за неделю статей конкретной категории,
         # помещаем в письмо шаблон (html страничку), а также передаем в шаблон нужные нам переменные
         for subscriber in subscribers:
-            # для удобства в консоль добавляем разграничители и пометки
-            print('____________________________', subscriber.email, '___________________________________')
-            print()
-            print('Письмо, отправленное по адресу: ', subscriber.email)
+            subscriber_username = subscriber.username
+            subscriber_email = subscriber.email
             html_content = render_to_string(
                 'news/mail_sender.html', {'user': subscriber,
                                           'text': news_from_each_category,
                                           'category_name': category.name,
                                           'week_number_last': week_number_last})
 
-            subscriber_username = subscriber.username
-            subscriber_email = subscriber.email
-
             weekly_email_task(subscriber_username, subscriber_email, html_content)
-
-            print()
-
-            print(html_content)
 
 
 # функция, которая будет удалять неактуальные задачи

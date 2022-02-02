@@ -187,52 +187,27 @@ class IndexView(View):
 
 
 # функция-представление для рассылки писем подписчикам при появлении новой публикации в выбранной категории
-# данная функция будет использоваться в файле signals.py
+# данная функция будет использоваться в файле news/signals.py
 def sending_emails_to_subscribers(instance):
-    print('Представления - начало')
-    print()
-    print()
-    print('====================ПРОВЕРКА СИГНАЛОВ===========================')
-    print()
-    print('задача - отправка письма подписчикам при добавлении новой статьи')
-
     sub_text = instance.text
     sub_title = instance.title
     # получаем нужный объект модели Категория через рк Пост
     category = Category.objects.get(pk=Post.objects.get(pk=instance.pk).post_category.pk)
-    print()
-    print('category:', category)
-    print()
+    # получаем список подписчиков категории
     subscribers = category.subscribers.all()
 
-    # для удобства вывода инфы в консоль, никакой важной функции не несет
-    print('Адреса рассылки:')
-    for qaz in subscribers:
-        print(qaz.email)
-
-    print()
-    print()
-    print()
+    # проходимся по всем подписчикам в списке
     for subscriber in subscribers:
-        # для удобства вывода инфы в консоль, никакой важной функции не несет
-        print('**********************', subscriber.email, '**********************')
-        print(subscriber)
-        print('Адресат:', subscriber.email)
-
+        # создание переменных, которые необходимы для таски
+        subscriber_username = subscriber.username
+        subscriber_useremail = subscriber.email
         html_content = render_to_string('news/mail.html',
                                         {'user': subscriber,
                                          'title': sub_title,
                                          'text': sub_text[:50],
                                          'post': instance})
-
-        subscriber_username = subscriber.username
-        subscriber_useremail = subscriber.email
-
-        # фукнция для таски, передаем в нее все что нужно для отправки подписчикам письма
-        email_task.delay(subscriber_username, subscriber_useremail, html_content)
-
-    print('Представления - конец')
-
+        # функция для таски, передаем в нее все что нужно для отправки подписчикам письма
+        email_task(subscriber_username, subscriber_useremail, html_content)
     return redirect('/posts/')
 
 # Реализация отправки письма подписчикам при создании нового поста в их категории
