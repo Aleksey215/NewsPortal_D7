@@ -44,7 +44,7 @@ def news_sender():
         # определение номера прошлой недели
         week_number_last = datetime.now().isocalendar()[1]-1
 
-        # Второй цикл - из первого цикла получием рк категории, и подставляем его в запрос, в первый фильтр, во второй
+        # Второй цикл - из первого цикла получим рк категории, и подставляем его в запрос, в первый фильтр, во второй
         # фильтр подставляем значение предыдущей недели, то есть показать статьи с датой создания предыдущей недели
         for post in Post.objects.filter(post_category_id=category.id,
                                         time_of_creation__week=week_number_last).values('pk',
@@ -98,7 +98,7 @@ def news_sender():
             subscriber_username = subscriber.username
             subscriber_email = subscriber.email
 
-            weekly_email_task.delay(subscriber_username, subscriber_email, html_content)
+            weekly_email_task(subscriber_username, subscriber_email, html_content)
 
             print()
 
