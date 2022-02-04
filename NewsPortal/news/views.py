@@ -21,8 +21,7 @@ from django.template.loader import render_to_string  # импортируем ф
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
-
-from django.http import HttpResponse
+from django.core.cache import cache
 
 # Импорт пользовательских элементов:
 # модели - передают ин-ию из БД
@@ -73,6 +72,16 @@ class PostDetailView(DetailView):
     template_name = 'news/post_detail.html'
     # получение информации об объекте из БД
     queryset = Post.objects.all()
+
+    def get_object(self, *args, **kwargs):  # переопределяем метод получения объекта, как ни странно
+        obj = cache.get(f'post-{self.kwargs["pk"]}', None)  # кэш очень похож на словарь, и метод get действует также.
+        # Он забирает значение по ключу, если его нет, то забирает None.
+
+        # если объекта нет в кэше, то получаем его и записываем в кэш
+        if not obj:
+            obj = super().get_object(*args, **kwargs)
+            cache.set(f'post-{self.kwargs["pk"]}', obj)
+        return obj
 
 
 # представление для создания объекта.
@@ -170,20 +179,6 @@ def del_subscribe(request, **kwargs):
     Category.objects.get(pk=pk).subscribers.remove(request.user)
     # возвращаемся на страницу со списком категорий
     return redirect('/posts/categories')
-
-
-# Ниже пример из учебного материала
-# надо изменить!
-class IndexView(View):
-    def get(self, request):
-        # printer.delay(10)
-        # printer.apply_async([10], countdown=5)  # Параметр countdown устанавливает время (в секундах),
-                                                  # через которое задача должна начать выполняться.
-        # для реализации того же самого сдвига на 5 секунд мы можем получить текущее время и добавить timedelta,
-        # равное 5 секундам, чтобы получить datetime-объект момента через 5 секунд от текущего.
-        # printer.apply_async([10], eta=datetime.now() + timedelta(seconds=5))
-        # hello.delay()
-        return HttpResponse('Hello!')
 
 
 # функция-представление для рассылки писем подписчикам при появлении новой публикации в выбранной категории

@@ -10,14 +10,16 @@ from django.urls import path
 from .views import PostList, PostsSearch, PostDetailView, \
     PostCreateView, PostUpdateView, PostDeleteView, \
     CategoryList, add_subscribe, del_subscribe, CategoryDetail
+from django.views.decorators.cache import cache_page
 
 # создаем список всех url-адресов данного приложения
 # мысленно добавляем к каждому адресу: posts/ из главного файла
 # в переменной name указываем имя шаблона для визуализации
 urlpatterns = [
     # по пустому адресу мы получаем список публикаций как представление
-    path('', PostList.as_view(), name='posts'),  # т. к. сам по себе это класс,
+    path('', cache_page(60)(PostList.as_view()), name='posts'),  # т. к. сам по себе это класс,
     # то нам надо представить этот класс в виде view. Для этого вызываем метод as_view
+    # D8 добавил кеширование
 
     # адрес для поиска постов
     path('search/', PostsSearch.as_view(), name='search'),
@@ -36,10 +38,10 @@ urlpatterns = [
     path('delete/<int:pk>', PostDeleteView.as_view(), name='post_delete'),
 
     # адрес для просмотра категорий
-    path('categories/', CategoryList.as_view(), name='categories'),
+    path('categories/', cache_page(60)(CategoryList.as_view()), name='categories'),
     path('categories/<int:pk>/add_subscribe/', add_subscribe, name='add_subscribe'),
     path('categories/<int:pk>/del_subscribe/', del_subscribe, name='del_subscribe'),
-    path('categories/<int:pk>/', CategoryDetail.as_view(), name='category_subscription'),
+    path('categories/<int:pk>/', cache_page(60*5)(CategoryDetail.as_view()), name='category_subscription'),
 
 
 ]
