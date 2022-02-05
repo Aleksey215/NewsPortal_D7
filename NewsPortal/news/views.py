@@ -32,6 +32,7 @@ from .filters import PostFilter
 # формы - прописываются в файле forms.py
 # используются для создания форм в браузере по модели
 from .forms import PostForm
+# Задача отправки письма подписчикам при добавлении статьи в выбранной категории
 from .tasks import email_task
 
 
